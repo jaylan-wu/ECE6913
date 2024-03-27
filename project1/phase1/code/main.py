@@ -16,18 +16,17 @@ OPCODES = {
 }
 
 FUNCT3 = {
-    'ADD': 0b000,
-    'SUB': 0b000,
-    'XOR': 0b100,
-    'OR':  0b110,
-    'AND': 0b111,
-    'BNE': 0b001,
-    'SW':  0b010
+    0b000: 'ADS',
+    0b100: 'XOR',
+    0b110: 'OR',
+    0b111: 'AND',
+    0b001: 'BNE',
+    0b010: 'SW'  
 }
 
 FUNCT7 = {
-    'ADD': 0b0000000,
-    'SUB': 0b0100000
+    0b0000000: 'ADD',
+    0b0100000: 'SUB'
 }
 
 BIT_FIELDS = {
@@ -134,36 +133,57 @@ class SingleStageCore(Core):
         self.opFilePath = ioDir + "\\StateResult_SS.txt"
 
     def step(self):
-        # Your implementation
+        '''------------------------------ CODE BELOW ---------------------------------'''
         current_instr = self.ext_imem.readInstr(self.cycle)
-        current_opcode = current_instr[-7:] # gets current opcode instruction
- 
-        match current_opcode:
-            case OPCODES.get('R'):
-                R_res = [] # instructions separated by bit fields
-                start = 0
-                for size in BIT_FIELDS.get('R'):
-                    R_res.append(current_instr[start: start + size])
-                    start += size
-                
-                match R_res[3]:
-                    case FUNCT3.get('')
+        current_opcode = OPCODES.get(current_instr[-7:]) # gets current opcode instruction
 
-            case OPCODES.get('I'):
+        seperated_instr = [] # instructions separated by bit fields
+        start = 0
+        for size in BIT_FIELDS.get(current_opcode):
+            seperated_instr.append(current_instr[start: start + size])
+            start += size
+
+        #bin(int('1010', 2)) <-- conversion
+        match current_opcode: 
+            case 'R':
+                match FUNCT3.get(seperated_instr[3]):
+                    case 'ADS':
+                        if (seperated_instr[0] == 'ADD'):
+                            pass 
+                        if (seperated_instr[0] == 'SUB'):
+                            pass
+                    case 'XOR':
+                        pass 
+                    case 'OR':
+                        pass
+                    case 'AND':
+                        pass
+            case 'I':
+                match FUNCT3.get(seperated_instr[2]):
+                    case 'ADS': #ADDI
+                        pass
+                    case 'XOR': #XORI
+                        pass
+                    case 'OR': #ORI
+                        pass
+                    case 'AND': #ANDI
+                        pass
+            case 'J':
                 pass
-            case OPCODES.get('J'):
+            case 'B':
+                match FUNCT3.get(seperated_instr[3]):
+                    case 'ADS': #BEQ
+                        pass
+                    case 'BNE': 
+                        pass
+            case 'S': 
                 pass
-            case OPCODES.get('B'):
+            case 'LW':
                 pass
-            case OPCODES.get('S'):
-                pass
-            case OPCODES.get('LW'):
-                pass
-            case OPCODES.get('HALT'):
-                pass
+            case 'HALT':
+               self.halted = True
 
 
-        self.halted = True
         if self.state.IF["nop"]:
             self.halted = True
             
