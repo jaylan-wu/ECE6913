@@ -59,7 +59,7 @@ class DataMem(object):
         with open(ioDir + "\\dmem.txt") as dm:
             self.DMem = [data.replace("\n", "") for data in dm.readlines()]
 
-    def readInstr(self, ReadAddress):
+    def readMem(self, ReadAddress):
         '''------------- CODE BELOW ---------------'''
         index = ReadAddress
         for idx in range(index, index+4):
