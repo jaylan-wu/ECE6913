@@ -144,21 +144,37 @@ class SingleStageCore(Core):
             start += size
 
         #bin(int('1010', 2)) <-- conversion
+        #result (rd) = bin(int(a, 2) + int(b, 2))  -> results in a string
+        # where a = rs1 (string) and b = rs2 (string) 
+        # no need to include another library! (at least for R type)
         match current_opcode: 
             case 'R':
+                #seperated_instr[4] = rd, seperated_inst[2] = rs1, seperated_inst[1] = rs2 
                 match FUNCT3.get(seperated_instr[3]):
                     case 'ADS':
-                        if (seperated_instr[0] == 'ADD'):
-                            pass 
-                        if (seperated_instr[0] == 'SUB'):
-                            pass
+                        if (FUNCT7.get(seperated_instr[0]) == 'ADD'):
+                            #rd = rs1 + rs2
+                            rd = bin(int(seperated_instr[2], 2) + int(seperated_instr[1], 2))
+                            seperated_instr[4] = rd 
+
+                        if (FUNCT7.get(seperated_instr[0]) == 'SUB'):
+                            rd = bin(int(seperated_instr[2], 2) - int(seperated_instr[1], 2))
+                            seperated_instr[4] = rd
+
                     case 'XOR':
-                        pass 
+                        rd = bin(int(seperated_instr[2], 2) ^ int(seperated_instr[1], 2))
+                        seperated_instr[4] = rd
+
                     case 'OR':
-                        pass
+                        rd = bin(int(seperated_instr[2], 2) | int(seperated_instr[1], 2))
+                        seperated_instr[4] = rd
+
                     case 'AND':
-                        pass
+                        rd = bin(int(seperated_instr[2], 2) & int(seperated_instr[1], 2))
+                        seperated_instr[4] = rd
+                        
             case 'I':
+                #seperated_instr[3] = rd, seperated_inst[1] = rs1, seperated_inst[0] = imm[11:5]
                 match FUNCT3.get(seperated_instr[2]):
                     case 'ADS': #ADDI
                         pass
