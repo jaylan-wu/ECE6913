@@ -48,6 +48,7 @@ class InsMem(object):
     def readInstr(self, ReadAddress):
         '''------------- CODE BELOW ---------------'''
         index = int(ReadAddress*4)
+        instruction = ""
         for idx in range(index, index+4):
             instruction += self.IMem[idx]
         return instruction
@@ -133,7 +134,7 @@ class SingleStageCore(Core):
 
     def step(self):
         '''------------------------------ CODE BELOW ---------------------------------'''
-        current_instr = int(self.ext_imem.readInstr(self.state.IF['PC'] / 4))
+        current_instr = self.ext_imem.readInstr(self.state.IF['PC'] / 4)
         current_opcode = OPCODES.get(current_instr[-7:]) # gets current opcode instruction
 
         seperated_instr = [] # instructions separated by bit fields
