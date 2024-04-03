@@ -58,8 +58,13 @@ class DataMem(object):
     def __init__(self, name, ioDir):
         self.id = name
         self.ioDir = ioDir
+        line = 0
         with open(ioDir + "/dmem.txt") as dm:
             self.DMem = [data.replace("\n", "") for data in dm.readlines()]
+            line += 1
+        for i in range(line, MemSize):
+            self.DMem.append("0" * 8)
+
 
     def readMem(self, ReadAddress):
         '''------------- CODE BELOW ---------------'''
@@ -78,7 +83,7 @@ class DataMem(object):
         for x in range(0,4):
             self.DMem[index] = WriteData[start : start + 8]
             start += 8
-            index+=1
+            index += 1
         return 
                    
     def outputDataMem(self):
@@ -89,7 +94,7 @@ class DataMem(object):
 class RegisterFile(object):
     def __init__(self, ioDir):
         self.outputFile = ioDir + "RFResult.txt"
-        self.Registers = [0x0 for i in range(32)]
+        self.Registers = ["0" * 32 for i in range(32)]
     
     def readRF(self, Reg_addr):
         '''------------- CODE BELOW ---------------'''
@@ -137,11 +142,13 @@ class SingleStageCore(Core):
     def step(self):
         '''------------------------------ CODE BELOW ---------------------------------'''
         current_instr = self.ext_imem.readInstr(self.state.IF['PC'] / 4)
-        print(current_instr, len(current_instr))
+        #print(current_instr, len(current_instr))
         opcode = current_instr[-7:]
-        print(opcode, type(opcode))
+        # print(opcode, type(opcode))
         current_opcode = OPCODES.get(int(current_instr[-7:],2)) # gets current opcode instruction
-        #print(current_opcode)
+        print(current_opcode)
+        print(self.state.IF['PC'])
+        print(self.nextState.IF['PC'])
 
         seperated_instr = [] # instructions separated by bit fields
         start = 0
@@ -155,37 +162,58 @@ class SingleStageCore(Core):
         #result (rd) = bin(int(a, 2) + int(b, 2))  -> results in a string
         # where a = rs1 (string) and b = rs2 (string) 
         # no need to include another library! (at least for R type)
-        print(current_opcode)
+        #print(current_opcode)
         match current_opcode: 
-            case 'R':
+            case 'R': #DONE
                 #seperated_instr[4] = rd, seperated_inst[2] = rs1, seperated_inst[1] = rs2 
                 match FUNCT3.get(int(seperated_instr[3],2)):
                     case 'ADS':
                         # THIS IS FIXED
                         if (FUNCT7.get(int(seperated_instr[0], 2)) == 'ADD'):
-                            rd = int(seperated_instr[2], 2) + int(seperated_instr[1], 2)
-                            self.myRF.writeRF(int(seperated_instr[4]), rd)
+                            rs1 = self.myRF.readRF(int(seperated_instr[1],2))
+                            rs2 = self.myRF.readRF(int(seperated_instr[2],2))
+                            rd = int(rs1,2) + int(rs2,2)
+                            #print(bin(rd))
+                            self.myRF.writeRF(int(seperated_instr[4],2), str(bin(rd))[2:])
                             self.nextState.IF['PC'] = self.state.IF['PC'] + 4
+                            pass
 
-                        if (FUNCT7.get(seperated_instr[0]) == 'SUB'):
-                            rd = int(seperated_instr[2], 2) - int(seperated_instr[1], 2)
-                            self.myRF.writeRF(seperated_instr[4], rd)
+                        if (FUNCT7.get(int(seperated_instr[0]), 2) == 'SUB'):
+                            rs1 = self.myRF.readRF(int(seperated_instr[1],2))
+                            rs2 = self.myRF.readRF(int(seperated_instr[2],2))
+                            rd = int(rs1,2) - int(rs2,2)
+                            #print(bin(rd))
+                            self.myRF.writeRF(int(seperated_instr[4],2), str(bin(rd))[2:])
                             self.nextState.IF['PC'] = self.state.IF['PC'] + 4
+                            pass
 
                     case 'XOR':
-                        rd = bin(int(seperated_instr[2], 2) ^ int(seperated_instr[1], 2))
-                        self.myRF.writeRF(seperated_instr[4], rd)
+                        rs1 = self.myRF.readRF(int(seperated_instr[1],2))
+                        rs2 = self.myRF.readRF(int(seperated_instr[2],2))
+                        rd = int(rs1,2) ^ int(rs2,2)
+                        #print(bin(rd))
+                        self.myRF.writeRF(int(seperated_instr[4],2), str(bin(rd))[2:])
                         self.nextState.IF['PC'] = self.state.IF['PC'] + 4
+                        pass
 
                     case 'OR':
-                        rd = bin(int(seperated_instr[2], 2) | int(seperated_instr[1], 2))
-                        self.myRF.writeRF(seperated_instr[4], rd)
+                        rs1 = self.myRF.readRF(int(seperated_instr[1],2))
+                        rs2 = self.myRF.readRF(int(seperated_instr[2],2))
+                        rd = int(rs1,2) | int(rs2,2)
+                        #print(bin(rd))
+                        self.myRF.writeRF(int(seperated_instr[4],2), str(bin(rd))[2:])
                         self.nextState.IF['PC'] = self.state.IF['PC'] + 4
+                        pass
 
                     case 'AND':
-                        rd = bin(int(seperated_instr[2], 2) & int(seperated_instr[1], 2))
-                        self.myRF.writeRF(seperated_instr[4], rd)
+                        rs1 = self.myRF.readRF(int(seperated_instr[1],2))
+                        rs2 = self.myRF.readRF(int(seperated_instr[2],2))
+                        rd = int(rs1,2) & int(rs2,2)
+                        #print(bin(rd))
+                        self.myRF.writeRF(int(seperated_instr[4],2), str(bin(rd))[2:])
                         self.nextState.IF['PC'] = self.state.IF['PC'] + 4
+                        pass
+                pass
 
             case 'I':
                 #seperated_instr[3] = rd, seperated_inst[1] = rs1, seperated_inst[0] = imm[11:5]
@@ -196,48 +224,54 @@ class SingleStageCore(Core):
                         data = bin(spliced + int(seperated_instr[1], 2))
                         self.myRF.writeRF(seperated_instr[3], data)
                         self.nextState.IF['PC'] = self.state.IF['PC'] + 4
+                        pass
 
                     case 'XOR': #XORI
                         spliced = bin(int(seperated_instr[0], 10))
                         data = bin(spliced ^ int(seperated_instr[1], 2))
                         self.myRF.writeRF(seperated_instr[3], data)
                         self.nextState.IF['PC'] = self.state.IF['PC'] + 4
+                        pass
 
                     case 'OR': #ORI
                         spliced = bin(int(seperated_instr[0], 10))
                         data = bin(spliced | int(seperated_instr[1], 2))
                         self.myRF.writeRF(seperated_instr[3], data)
                         self.nextState.IF['PC'] = self.state.IF['PC'] + 4
+                        pass
 
                     case 'AND': #ANDI
                         spliced = bin(int(seperated_instr[0], 10))
                         data = bin(spliced & int(seperated_instr[1], 2))
                         self.myRF.writeRF(seperated_instr[3], data)
                         self.nextState.IF['PC'] = self.state.IF['PC'] + 4
+                        pass
+                pass
 
-            case 'J':
-                imm_20 = bin(int(seperated_instr[0][0], 2)) & 0x1
-                imm_19_12 = bin(int(seperated_instr[0][1:8], 2)) & 0xFF
-                imm_11 = bin(int(seperated_instr[0][9], 2)) & 0x1
-                imm_10_1 = bin(int(seperated_instr[0][10:19], 2)) & 0x3FF
+            case 'J': #DONE
+                imm_20 = int(seperated_instr[0][0], 2) & 0x1
+                imm_19_12 = int(seperated_instr[0][1:8], 2) & 0xFF
+                imm_11 = int(seperated_instr[0][9], 2) & 0x1
+                imm_10_1 = int(seperated_instr[0][10:19], 2) & 0x3FF
                 imm = (imm_20 | imm_19_12 | imm_11 | imm_10_1)
 
                 if imm_20 == 1:
                     imm = imm | 0xFFF00000
 
-                next_cycle = self.state.IF['PC'] + 4
-                self.myRF.writeRF(int(seperated_instr[2]), next_cycle) # rd = PC + 4
+                next_instruction = self.ext_imem.readInstr((self.state.IF['PC'] + 4) / 4)
+                self.myRF.writeRF(int(seperated_instr[2], 2), next_instruction) # rd = PC + 4
 
-                pc = self.state.IF['PC'] + (int(imm, 10) * 4)
+                pc = self.state.IF['PC'] + (imm * 4)
                 self.nextState.IF['PC'] = pc
+                pass
 
-            case 'B':
+            case 'B': #DONE
                 match FUNCT3.get(seperated_instr[3]):
                     case 'ADS': #BEQ
                         imm = seperated_instr[0][0] + seperated_instr[5][4] + seperated_instr[0][1:] + seperated_instr[5][1:3]
-                        imm = bin(int(imm), 2)
-                        if (bin(int(seperated_instr[1], 2)) == bin(int(seperated_instr[2], 2))):
-                            pc = self.state.IF['PC'] + (int(imm, 10) * 4)
+                        imm = int(imm, 2)
+                        if (int(seperated_instr[1], 2) == int(seperated_instr[2], 2)):
+                            pc = self.state.IF['PC'] + imm*4
                             self.nextState.IF['PC'] = pc
                         else:
                             self.nextState.IF['PC'] = self.state.IF['PC'] + 4
@@ -245,37 +279,50 @@ class SingleStageCore(Core):
                         pass
                     case 'BNE': 
                         imm = seperated_instr[0][0] + seperated_instr[5][4] + seperated_instr[0][1:] + seperated_instr[5][1:3]
-                        imm = bin(int(imm), 2)
-                        if (bin(int(seperated_instr[1], 2)) != bin(int(seperated_instr[2], 2))):
-                            pc = self.state.IF['PC'] + (int(imm, 10) * 4)
+                        imm = int(imm, 2)
+                        if (int(seperated_instr[1], 2) != int(seperated_instr[2], 2)):
+                            pc = self.state.IF['PC'] + imm*4
                             self.nextState.IF['PC'] = pc
                         else:
                             self.nextState.IF['PC'] = self.state.IF['PC'] + 4
                         pass
-            case 'S': 
+                pass
+
+            case 'S':  #DONE
                 imm = seperated_instr[0] + seperated_instr[4]
-                imm = bin(int(imm), 2)
-                mem_loc = int(seperated_instr[2]) + (int(imm))
-                self.ext_dmem.writeDataMem(mem_loc, self.ext_dmem.readMem(int(seperated_instr[1])))
+                imm = int(imm, 2)
+                mem_loc = int(seperated_instr[2]) + imm
+                self.ext_dmem.writeDataMem(mem_loc, str(self.myRF.readRF(int(seperated_instr[1],2))))
                 self.nextState.IF['PC'] = self.state.IF['PC'] + 4
                 pass
-            case 'LW':
-                imm = seperated_instr[0] + seperated_instr[4]
-                imm = int(imm)
-                self.myRF.writeRF(int(seperated_instr[3]), self.ext_dmem.readMem(int(seperated_instr[1])))
-                self.nextState.IF['PC'] = self.state.IF['PC'] + 4           
+
+            case 'LW': #DONE
+                imm = int(seperated_instr[0], 2)
+                #print(imm)
+                self.myRF.writeRF(int(seperated_instr[3], 2), self.ext_dmem.readMem(int(seperated_instr[1],2) + imm))
+                self.nextState.IF['PC'] = self.state.IF['PC'] + 4
+                pass           
+
+            case 'HALT': #DONE
+                self.nextState.IF['PC'] = self.state.IF['PC']
+                self.nextState.IF['nop'] = True
                 pass
-            case 'HALT':
-               self.nextState.IF['nop'] = True
 
 
         if self.state.IF["nop"]:
             self.halted = True
+
+        if (self.state.IF['PC'] == 0):
+            self.state.IF['PC'] = 4
             
         self.myRF.outputRF(self.cycle) # dump RF
-        self.printState(self.nextState, self.cycle) # print states after executing cycle 0, cycle 1, cycle 2 ... 
+        self.printState(self.state, self.cycle) # print states after executing cycle 0, cycle 1, cycle 2 ... 
             
+        print(self.state.IF['PC'])
+        print(self.nextState.IF['PC'])
+        print()
         self.state = self.nextState #The end of the cycle and updates the current state with the values calculated in this cycle
+        self.nextState = State()
         '''--------------- FIX THIS --------------'''
         self.cycle += 1
 
