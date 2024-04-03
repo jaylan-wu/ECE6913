@@ -215,7 +215,7 @@ class SingleStageCore(Core):
                     imm = imm | 0xFFF00000
 
                 next_cycle = self.state.IF['PC'] + 4
-                self.myRF.writeRF(seperated_instr[3], next_cycle) # rd = PC + 4
+                self.myRF.writeRF(int(seperated_instr[2]), next_cycle) # rd = PC + 4
 
                 pc = self.state.IF['PC'] + (int(imm, 10) * 4)
                 self.nextState.IF['PC'] = pc
@@ -223,16 +223,36 @@ class SingleStageCore(Core):
             case 'B':
                 match FUNCT3.get(seperated_instr[3]):
                     case 'ADS': #BEQ
-
+                        imm = seperated_instr[0][0] + seperated_instr[5][4] + seperated_instr[0][1:] + seperated_instr[5][1:3]
+                        imm = bin(int(imm), 2)
+                        if (bin(int(seperated_instr[1], 2)) == bin(int(seperated_instr[2], 2))):
+                            pc = self.state.IF['PC'] + (int(imm, 10) * 4)
+                            self.nextState.IF['PC'] = pc
+                        else:
+                            self.nextState.IF['PC'] = self.state.IF['PC'] + 4
+                        
                         pass
                     case 'BNE': 
-
+                        imm = seperated_instr[0][0] + seperated_instr[5][4] + seperated_instr[0][1:] + seperated_instr[5][1:3]
+                        imm = bin(int(imm), 2)
+                        if (bin(int(seperated_instr[1], 2)) != bin(int(seperated_instr[2], 2))):
+                            pc = self.state.IF['PC'] + (int(imm, 10) * 4)
+                            self.nextState.IF['PC'] = pc
+                        else:
+                            self.nextState.IF['PC'] = self.state.IF['PC'] + 4
                         pass
             case 'S': 
-
+                imm = seperated_instr[0] + seperated_instr[4]
+                imm = bin(int(imm), 2)
+                mem_loc = int(seperated_instr[2]) + (int(imm))
+                self.ext_dmem.writeDataMem(mem_loc, self.ext_dmem.readMem(int(seperated_instr[1])))
+                self.nextState.IF['PC'] = self.state.IF['PC'] + 4
                 pass
             case 'LW':
-
+                imm = seperated_instr[0] + seperated_instr[4]
+                imm = bin(int(imm), 2)
+                self.myRF.writeRF(int(seperated_instr(3)), self.ext_dmem.readMem(int(seperated_instr[1])))
+                self.nextState.IF['PC'] = self.state.IF['PC'] + 4           
                 pass
             case 'HALT':
                self.nextState.IF['nop'] = True
