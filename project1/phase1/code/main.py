@@ -34,20 +34,22 @@ BIT_FIELDS = {
     'I': [12,5,3,5,7],
     'S': [7,5,5,3,5,7], 
     'B': [7,5,5,3,5,7],
-    'U': [20,5,7],
-    'J': [20,5,7]
+    'J': [20,5,7],
+    'LW': [12,5,3,5,7],
+    'HALT': [32]
 }
 
 class InsMem(object):
     def __init__(self, name, ioDir):
         self.id = name
         
-        with open(ioDir + "\\imem.txt") as im:
+        with open(ioDir + "/imem.txt") as im:
             self.IMem = [data.replace("\n", "") for data in im.readlines()]
 
     def readInstr(self, ReadAddress):
         '''------------- CODE BELOW ---------------'''
-        index = ReadAddress*4
+        index = int(ReadAddress*4)
+        instruction = ""
         for idx in range(index, index+4):
             instruction += self.IMem[idx]
         return instruction
@@ -56,12 +58,13 @@ class DataMem(object):
     def __init__(self, name, ioDir):
         self.id = name
         self.ioDir = ioDir
-        with open(ioDir + "\\dmem.txt") as dm:
+        with open(ioDir + "/dmem.txt") as dm:
             self.DMem = [data.replace("\n", "") for data in dm.readlines()]
 
     def readMem(self, ReadAddress):
         '''------------- CODE BELOW ---------------'''
         index = ReadAddress
+        data_instr = ""
         for idx in range(index, index+4):
             data_instr += self.DMem[idx]
         return data_instr
@@ -79,7 +82,7 @@ class DataMem(object):
         return 
                    
     def outputDataMem(self):
-        resPath = self.ioDir + "\\" + self.id + "_DMEMResult.txt"
+        resPath = self.ioDir + "/" + self.id + "_DMEMResult.txt"
         with open(resPath, "w") as rp:
             rp.writelines([str(data) + "\n" for data in self.DMem])
 
@@ -128,36 +131,44 @@ class Core(object):
 
 class SingleStageCore(Core):
     def __init__(self, ioDir, imem, dmem):
-        super(SingleStageCore, self).__init__(ioDir + "\\SS_", imem, dmem)
-        self.opFilePath = ioDir + "\\StateResult_SS.txt"
+        super(SingleStageCore, self).__init__(ioDir + "/SS_", imem, dmem)
+        self.opFilePath = ioDir + "/StateResult_SS.txt"
 
     def step(self):
         '''------------------------------ CODE BELOW ---------------------------------'''
-        current_instr = self.ext_imem.readInstr(self.state.IF['PC'] / 4) 
-        current_opcode = OPCODES.get(current_instr[-7:]) # gets current opcode instruction
+        current_instr = self.ext_imem.readInstr(self.state.IF['PC'] / 4)
+        print(current_instr, len(current_instr))
+        opcode = current_instr[-7:]
+        print(opcode, type(opcode))
+        current_opcode = OPCODES.get(int(current_instr[-7:],2)) # gets current opcode instruction
+        #print(current_opcode)
 
         seperated_instr = [] # instructions separated by bit fields
         start = 0
         for size in BIT_FIELDS.get(current_opcode):
             seperated_instr.append(current_instr[start: start + size])
             start += size
+        
+        print(seperated_instr)
 
         #bin(int('1010', 2)) <-- conversion
         #result (rd) = bin(int(a, 2) + int(b, 2))  -> results in a string
         # where a = rs1 (string) and b = rs2 (string) 
         # no need to include another library! (at least for R type)
+        print(current_opcode)
         match current_opcode: 
             case 'R':
                 #seperated_instr[4] = rd, seperated_inst[2] = rs1, seperated_inst[1] = rs2 
-                match FUNCT3.get(seperated_instr[3]):
+                match FUNCT3.get(int(seperated_instr[3],2)):
                     case 'ADS':
-                        if (FUNCT7.get(seperated_instr[0]) == 'ADD'):
-                            rd = bin(int(seperated_instr[2], 2) + int(seperated_instr[1], 2))
-                            self.myRF.writeRF(seperated_instr[4], rd)
+                        # THIS IS FIXED
+                        if (FUNCT7.get(int(seperated_instr[0], 2)) == 'ADD'):
+                            rd = int(seperated_instr[2], 2) + int(seperated_instr[1], 2)
+                            self.myRF.writeRF(int(seperated_instr[4]), rd)
                             self.nextState.IF['PC'] = self.state.IF['PC'] + 4
 
                         if (FUNCT7.get(seperated_instr[0]) == 'SUB'):
-                            rd = bin(int(seperated_instr[2], 2) - int(seperated_instr[1], 2))
+                            rd = int(seperated_instr[2], 2) - int(seperated_instr[1], 2)
                             self.myRF.writeRF(seperated_instr[4], rd)
                             self.nextState.IF['PC'] = self.state.IF['PC'] + 4
 
@@ -250,8 +261,8 @@ class SingleStageCore(Core):
                 pass
             case 'LW':
                 imm = seperated_instr[0] + seperated_instr[4]
-                imm = bin(int(imm), 2)
-                self.myRF.writeRF(int(seperated_instr(3)), self.ext_dmem.readMem(int(seperated_instr[1])))
+                imm = int(imm)
+                self.myRF.writeRF(int(seperated_instr[3]), self.ext_dmem.readMem(int(seperated_instr[1])))
                 self.nextState.IF['PC'] = self.state.IF['PC'] + 4           
                 pass
             case 'HALT':
@@ -280,8 +291,8 @@ class SingleStageCore(Core):
 
 class FiveStageCore(Core):
     def __init__(self, ioDir, imem, dmem):
-        super(FiveStageCore, self).__init__(ioDir + "\\FS_", imem, dmem)
-        self.opFilePath = ioDir + "\\StateResult_FS.txt"
+        super(FiveStageCore, self).__init__(ioDir + "/FS_", imem, dmem)
+        self.opFilePath = ioDir + "/StateResult_FS.txt"
 
     def step(self):
         # Your implementation
