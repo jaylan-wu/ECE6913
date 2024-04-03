@@ -42,12 +42,12 @@ class InsMem(object):
     def __init__(self, name, ioDir):
         self.id = name
         
-        with open(ioDir + "\\imem.txt") as im:
+        with open(ioDir + "/imem.txt") as im:
             self.IMem = [data.replace("\n", "") for data in im.readlines()]
 
     def readInstr(self, ReadAddress):
         '''------------- CODE BELOW ---------------'''
-        index = ReadAddress*4
+        index = int(ReadAddress*4)
         for idx in range(index, index+4):
             instruction += self.IMem[idx]
         return instruction
@@ -56,7 +56,7 @@ class DataMem(object):
     def __init__(self, name, ioDir):
         self.id = name
         self.ioDir = ioDir
-        with open(ioDir + "\\dmem.txt") as dm:
+        with open(ioDir + "/dmem.txt") as dm:
             self.DMem = [data.replace("\n", "") for data in dm.readlines()]
 
     def readMem(self, ReadAddress):
@@ -79,13 +79,13 @@ class DataMem(object):
         return 
                    
     def outputDataMem(self):
-        resPath = self.ioDir + "\\" + self.id + "_DMEMResult.txt"
+        resPath = self.ioDir + "/" + self.id + "_DMEMResult.txt"
         with open(resPath, "w") as rp:
             rp.writelines([str(data) + "\n" for data in self.DMem])
 
 class RegisterFile(object):
     def __init__(self, ioDir):
-        self.outputFile = ioDir + "RFResult.txt"
+        self.outputFile = ioDir + "/RFResult.txt"
         self.Registers = [0x0 for i in range(32)]
     
     def readRF(self, Reg_addr):
@@ -128,12 +128,12 @@ class Core(object):
 
 class SingleStageCore(Core):
     def __init__(self, ioDir, imem, dmem):
-        super(SingleStageCore, self).__init__(ioDir + "\\SS_", imem, dmem)
-        self.opFilePath = ioDir + "\\StateResult_SS.txt"
+        super(SingleStageCore, self).__init__(ioDir + "/SS_", imem, dmem)
+        self.opFilePath = ioDir + "/StateResult_SS.txt"
 
     def step(self):
         '''------------------------------ CODE BELOW ---------------------------------'''
-        current_instr = self.ext_imem.readInstr(self.state.IF['PC'] / 4) 
+        current_instr = int(self.ext_imem.readInstr(self.state.IF['PC'] / 4))
         current_opcode = OPCODES.get(current_instr[-7:]) # gets current opcode instruction
 
         seperated_instr = [] # instructions separated by bit fields
@@ -280,8 +280,8 @@ class SingleStageCore(Core):
 
 class FiveStageCore(Core):
     def __init__(self, ioDir, imem, dmem):
-        super(FiveStageCore, self).__init__(ioDir + "\\FS_", imem, dmem)
-        self.opFilePath = ioDir + "\\StateResult_FS.txt"
+        super(FiveStageCore, self).__init__(ioDir + "/FS_", imem, dmem)
+        self.opFilePath = ioDir + "/StateResult_FS.txt"
 
     def step(self):
         # Your implementation
