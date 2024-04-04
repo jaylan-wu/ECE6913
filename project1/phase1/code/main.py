@@ -39,6 +39,11 @@ BIT_FIELDS = {
     'HALT': [32]
 }
 
+def twos_comp(val, bits):
+    if (val & (1 << (bits - 1))) != 0:
+        val = val - (1 << bits) 
+    return val
+
 class InsMem(object):
     def __init__(self, name, ioDir):
         self.id = name
@@ -217,33 +222,32 @@ class SingleStageCore(Core):
 
             case 'I':
                 #seperated_instr[3] = rd, seperated_inst[1] = rs1, seperated_inst[0] = imm[11:5]
-                #Steps to Solve: First, read the 
                 match FUNCT3.get(seperated_instr[2]):
                     case 'ADS': #ADDI
-                        spliced = bin(int(seperated_instr[0], 10))
-                        data = bin(spliced + int(seperated_instr[1], 2))
-                        self.myRF.writeRF(seperated_instr[3], data)
+                        imm = twos_comp(int(seperated_instr[0], 2), len(seperated_instr[0])) 
+                        data = imm + int(seperated_instr[1], 10)
+                        self.myRF.writeRF(seperated_instr[3], int(data, 2))
                         self.nextState.IF['PC'] = self.state.IF['PC'] + 4
                         pass
 
                     case 'XOR': #XORI
-                        spliced = bin(int(seperated_instr[0], 10))
-                        data = bin(spliced ^ int(seperated_instr[1], 2))
-                        self.myRF.writeRF(seperated_instr[3], data)
+                        imm = twos_comp(int(seperated_instr[0], 2), len(seperated_instr[0]))
+                        data = imm ^ int(seperated_instr[1], 10)
+                        self.myRF.writeRF(seperated_instr[3], int(data, 2))
                         self.nextState.IF['PC'] = self.state.IF['PC'] + 4
                         pass
 
                     case 'OR': #ORI
-                        spliced = bin(int(seperated_instr[0], 10))
-                        data = bin(spliced | int(seperated_instr[1], 2))
-                        self.myRF.writeRF(seperated_instr[3], data)
+                        imm = twos_comp(int(seperated_instr[0], 2), len(seperated_instr[0]))
+                        data = imm | int(seperated_instr[1], 10)
+                        self.myRF.writeRF(seperated_instr[3], int(data, 2))
                         self.nextState.IF['PC'] = self.state.IF['PC'] + 4
                         pass
 
                     case 'AND': #ANDI
-                        spliced = bin(int(seperated_instr[0], 10))
-                        data = bin(spliced & int(seperated_instr[1], 2))
-                        self.myRF.writeRF(seperated_instr[3], data)
+                        imm = twos_comp(int(seperated_instr[0], 2), len(seperated_instr[0]))
+                        data = imm & int(seperated_instr[1], 10)
+                        self.myRF.writeRF(seperated_instr[3], int(data, 2))
                         self.nextState.IF['PC'] = self.state.IF['PC'] + 4
                         pass
                 pass
