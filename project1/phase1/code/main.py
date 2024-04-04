@@ -1,3 +1,8 @@
+'''
+RISC-V Simulator
+Authors: Jaylan Wu (jw6639) and Max Vega (mv2210)
+'''
+
 import os
 import argparse
 
@@ -47,9 +52,11 @@ def twos_comp(val, bits):
 class InsMem(object):
     def __init__(self, name, ioDir):
         self.id = name
+        self.length = 0
         
         with open(ioDir + "/imem.txt") as im:
             self.IMem = [data.replace("\n", "") for data in im.readlines()]
+        self.length = len(self.IMem)
 
     def readInstr(self, ReadAddress):
         '''------------- CODE BELOW ---------------'''
@@ -173,31 +180,27 @@ class SingleStageCore(Core):
                 #seperated_instr[4] = rd, seperated_inst[2] = rs1, seperated_inst[1] = rs2 
                 match FUNCT3.get(int(seperated_instr[3],2)):
                     case 'ADS':
-                        # THIS IS FIXED
-                        if (FUNCT7.get(int(seperated_instr[0], 2)) == 'ADD'):
-                            rs1 = self.myRF.readRF(int(seperated_instr[1],2))
-                            rs2 = self.myRF.readRF(int(seperated_instr[2],2))
-                            rd = int(rs1,2) + int(rs2,2)
-                            #print(bin(rd))
-                            self.myRF.writeRF(int(seperated_instr[4],2), str(bin(rd))[2:])
-                            self.nextState.IF['PC'] = self.state.IF['PC'] + 4
-                            pass
-
-                        if (FUNCT7.get(int(seperated_instr[0]), 2) == 'SUB'):
-                            rs1 = self.myRF.readRF(int(seperated_instr[1],2))
-                            rs2 = self.myRF.readRF(int(seperated_instr[2],2))
-                            rd = int(rs1,2) - int(rs2,2)
-                            #print(bin(rd))
-                            self.myRF.writeRF(int(seperated_instr[4],2), str(bin(rd))[2:])
-                            self.nextState.IF['PC'] = self.state.IF['PC'] + 4
-                            pass
-
+                        match FUNCT7.get(int(seperated_instr[0], 2)):
+                            case 'ADD':
+                                rs1 = self.myRF.readRF(int(seperated_instr[1],2))
+                                rs2 = self.myRF.readRF(int(seperated_instr[2],2))
+                                rd = int(rs1,2) + int(rs2,2)
+                                rd = f"{rd & 0xffff_ffff:032b}"
+                                self.myRF.writeRF(int(seperated_instr[4],2), rd)
+                                self.nextState.IF['PC'] = self.state.IF['PC'] + 4
+                            case 'SUB':
+                                rs1 = self.myRF.readRF(int(seperated_instr[1],2))
+                                rs2 = self.myRF.readRF(int(seperated_instr[2],2))
+                                rd = int(rs1,2) - int(rs2,2)
+                                rd = f"{rd & 0xffff_ffff:032b}"
+                                self.myRF.writeRF(int(seperated_instr[4],2), rd)
+                                self.nextState.IF['PC'] = self.state.IF['PC'] + 4
                     case 'XOR':
                         rs1 = self.myRF.readRF(int(seperated_instr[1],2))
                         rs2 = self.myRF.readRF(int(seperated_instr[2],2))
                         rd = int(rs1,2) ^ int(rs2,2)
-                        #print(bin(rd))
-                        self.myRF.writeRF(int(seperated_instr[4],2), str(bin(rd))[2:])
+                        rd = f"{rd & 0xffff_ffff:032b}"
+                        self.myRF.writeRF(int(seperated_instr[4],2), rd)
                         self.nextState.IF['PC'] = self.state.IF['PC'] + 4
                         pass
 
@@ -205,8 +208,8 @@ class SingleStageCore(Core):
                         rs1 = self.myRF.readRF(int(seperated_instr[1],2))
                         rs2 = self.myRF.readRF(int(seperated_instr[2],2))
                         rd = int(rs1,2) | int(rs2,2)
-                        #print(bin(rd))
-                        self.myRF.writeRF(int(seperated_instr[4],2), str(bin(rd))[2:])
+                        rd = f"{rd & 0xffff_ffff:032b}"
+                        self.myRF.writeRF(int(seperated_instr[4],2), rd)
                         self.nextState.IF['PC'] = self.state.IF['PC'] + 4
                         pass
 
@@ -214,40 +217,47 @@ class SingleStageCore(Core):
                         rs1 = self.myRF.readRF(int(seperated_instr[1],2))
                         rs2 = self.myRF.readRF(int(seperated_instr[2],2))
                         rd = int(rs1,2) & int(rs2,2)
-                        #print(bin(rd))
-                        self.myRF.writeRF(int(seperated_instr[4],2), str(bin(rd))[2:])
+                        rd = f"{rd & 0xffff_ffff:032b}"
+                        self.myRF.writeRF(int(seperated_instr[4],2), rd)
                         self.nextState.IF['PC'] = self.state.IF['PC'] + 4
                         pass
                 pass
 
             case 'I':
                 #seperated_instr[3] = rd, seperated_inst[1] = rs1, seperated_inst[0] = imm[11:5]
-                match FUNCT3.get(seperated_instr[2]):
+                match FUNCT3.get(int(seperated_instr[2],2)):
                     case 'ADS': #ADDI
                         imm = twos_comp(int(seperated_instr[0], 2), len(seperated_instr[0])) 
-                        data = imm + int(seperated_instr[1], 10)
-                        self.myRF.writeRF(seperated_instr[3], int(data, 2))
+                        # print(self.myRF.readRF(int(seperated_instr[1],2)))
+                        # print(imm)
+                        data = int(imm) + int(self.myRF.readRF(int(seperated_instr[1],2)),2)
+                        # print(data)
+                        data = f"{data & 0xffff_ffff:032b}"
+                        self.myRF.writeRF(int(seperated_instr[3],2), data)
                         self.nextState.IF['PC'] = self.state.IF['PC'] + 4
                         pass
 
                     case 'XOR': #XORI
                         imm = twos_comp(int(seperated_instr[0], 2), len(seperated_instr[0]))
-                        data = imm ^ int(seperated_instr[1], 10)
-                        self.myRF.writeRF(seperated_instr[3], int(data, 2))
+                        data = int(imm) ^ int(self.myRF.readRF(int(seperated_instr[1],2)),2)
+                        data = f"{data & 0xffff_ffff:032b}"
+                        self.myRF.writeRF(int(seperated_instr[3],2), data)
                         self.nextState.IF['PC'] = self.state.IF['PC'] + 4
                         pass
 
                     case 'OR': #ORI
                         imm = twos_comp(int(seperated_instr[0], 2), len(seperated_instr[0]))
-                        data = imm | int(seperated_instr[1], 10)
-                        self.myRF.writeRF(seperated_instr[3], int(data, 2))
+                        data = int(imm) | int(self.myRF.readRF(int(seperated_instr[1],2)),2)
+                        data = f"{data & 0xffff_ffff:032b}"
+                        self.myRF.writeRF(int(seperated_instr[3],2), data)
                         self.nextState.IF['PC'] = self.state.IF['PC'] + 4
                         pass
 
                     case 'AND': #ANDI
                         imm = twos_comp(int(seperated_instr[0], 2), len(seperated_instr[0]))
-                        data = imm & int(seperated_instr[1], 10)
-                        self.myRF.writeRF(seperated_instr[3], int(data, 2))
+                        data = int(imm) & int(self.myRF.readRF(int(seperated_instr[1],2)),2)
+                        data = f"{data & 0xffff_ffff:032b}"
+                        self.myRF.writeRF(int(seperated_instr[3],2), data)
                         self.nextState.IF['PC'] = self.state.IF['PC'] + 4
                         pass
                 pass
@@ -270,22 +280,28 @@ class SingleStageCore(Core):
                 pass
 
             case 'B': #DONE
-                match FUNCT3.get(seperated_instr[3]):
+                match FUNCT3.get(int(seperated_instr[3],2)):
                     case 'ADS': #BEQ
-                        imm = seperated_instr[0][0] + seperated_instr[5][4] + seperated_instr[0][1:] + seperated_instr[5][1:3]
-                        imm = int(imm, 2)
-                        if (int(seperated_instr[1], 2) == int(seperated_instr[2], 2)):
-                            pc = self.state.IF['PC'] + imm*4
+                        imm = seperated_instr[0][0] + seperated_instr[5][5] + seperated_instr[0][1:6] + seperated_instr[5][1:4]
+                        imm = twos_comp(int(imm,2), len(imm))
+                        print(imm)
+                        if (self.myRF.readRF(int(seperated_instr[1],2)) == self.myRF.readRF(int(seperated_instr[2],2)) ):
+                            pc = self.state.IF['PC'] + imm
                             self.nextState.IF['PC'] = pc
                         else:
                             self.nextState.IF['PC'] = self.state.IF['PC'] + 4
                         
                         pass
                     case 'BNE': 
-                        imm = seperated_instr[0][0] + seperated_instr[5][4] + seperated_instr[0][1:] + seperated_instr[5][1:3]
-                        imm = int(imm, 2)
-                        if (int(seperated_instr[1], 2) != int(seperated_instr[2], 2)):
-                            pc = self.state.IF['PC'] + imm*4
+                        imm = seperated_instr[0][0] + seperated_instr[5][5] + seperated_instr[0][1:6] + seperated_instr[5][1:4]
+                        # print(imm, type(imm))
+                        imm = twos_comp(int(imm,2), len(imm))
+                        # print(imm, "here")
+                        # imm = int(imm, 2)
+                        # print(imm)
+                        if (self.myRF.readRF(int(seperated_instr[1],2)) != self.myRF.readRF(int(seperated_instr[2],2)) ):
+                            pc = self.state.IF['PC'] + imm
+                            self.state.IF['PC'] + imm
                             self.nextState.IF['PC'] = pc
                         else:
                             self.nextState.IF['PC'] = self.state.IF['PC'] + 4
@@ -316,8 +332,17 @@ class SingleStageCore(Core):
         if self.state.IF["nop"]:
             self.halted = True
 
-        if (self.state.IF['PC'] == 0):
-            self.state.IF['PC'] = 4
+        self.state.IF['PC'] += 4
+
+        print(self.state.IF['PC'])
+        print(self.nextState.IF['PC'])
+
+        if self.nextState.IF['nop'] == True:
+            self.state.IF["nop"] = True
+            self.state.IF['PC'] -= 4
+        
+        # if (self.state.IF['PC'] == 0):
+        #     self.state.IF['PC'] = 4
             
         self.myRF.outputRF(self.cycle) # dump RF
         self.printState(self.state, self.cycle) # print states after executing cycle 0, cycle 1, cycle 2 ... 
@@ -339,6 +364,15 @@ class SingleStageCore(Core):
         else: perm = "a"
         with open(self.opFilePath, perm) as wf:
             wf.writelines(printstate)
+    
+    def performance(self):
+        resPath = self.ioDir + "PerformanceMetrics.txt"
+        with open(resPath, "w") as rp:
+            rp.write("Performance of Single Stage:\n")
+            rp.write("#Cycles -> " + str(self.cycle + 1) + "\n" )
+            rp.write("#Instructions -> " + str(self.ext_imem.length / 4) + "\n")
+            rp.write("#CPI -> " + str(self.cycle / (self.ext_imem.length / 4)) + "\n")
+            rp.write("#IPC -> " + str((self.ext_imem.length / 4)/ self.cycle) + "\n")
 
 class FiveStageCore(Core):
     def __init__(self, ioDir, imem, dmem):
@@ -415,6 +449,8 @@ if __name__ == "__main__":
         if ssCore.halted and fsCore.halted:
             break
     
+    ssCore.performance()
+
     # dump SS and FS data mem.
     dmem_ss.outputDataMem()
     dmem_fs.outputDataMem()
